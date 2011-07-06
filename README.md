@@ -1,3 +1,5 @@
+Yo dawg. I herd you liek resque...
+
 coffee-resque-scheduler
 The start of a Resque Scheduler port to Node.js, CoffeeScript, and coffee-resque.
 
