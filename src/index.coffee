@@ -8,7 +8,7 @@ Helpers =
       rTimestamp = timestamp / 1000
     else
       throw "Invalid timestamp provide. Should be either a Date object or a number."
-    rTimestamp
+    Math.floor rTimestamp
 
 # Maintains the actual queue that will be
 # processing the scheduled jobs
@@ -35,8 +35,8 @@ class ResqueScheduler extends EventEmitter
   delayedPush: (timestamp, item) ->
     rTimestamp = Helpers.rTimestamp timestamp
 
-    @redis.rpush @key("delayed:#{rTimestamp}"), item
-    @redis.zadd @key('delayed_queue_schedule'), rTimestamp, rTimestamp
+    @redis.rpush @resque.key("delayed:#{rTimestamp}"), item
+    @redis.zadd @resque.key('delayed_queue_schedule'), rTimestamp, rTimestamp
     
   start: ->
     if not @running
@@ -50,8 +50,8 @@ class ResqueScheduler extends EventEmitter
     @interval = null
     
   poll: ->
-    return unless @running
     console.log "Polling..."
+  
     # Calculate the current
     # Decide if there is/are timestamp(s) in the sorted list to operate on 
     # if there are, get pull them
@@ -63,7 +63,7 @@ class ResqueScheduler extends EventEmitter
     
   nextDelayedTimestamp: (callback) ->
     time = Helpers.rTimestamp(new Date())
-    @redis.zrangebyscore 'delayed_queue_schedule', '-inf', time, 'limit', 0, 1, (err, items) ->
+    @redis.zrangebyscore @resque.key('delayed_queue_schedule'), '-inf', time, 'limit', 0, 1, (err, items) ->
       if err || not items?
         callback(err)
       else
@@ -79,8 +79,9 @@ class ResqueScheduler extends EventEmitter
       
   
   nextItemForTimestamp: (timestamp, callback) ->
-    @redis.lpop "delayed:#{timestamp}", (err, job) =>
-      @cleanupTimestamp "delayed:#{timestamp}", timestamp
+    key = @resque.key("delayed:#{timestamp}")
+    @redis.lpop key, (err, job) =>
+      @cleanupTimestamp key, timestamp
       if err
         callback err
       else
@@ -91,9 +92,10 @@ class ResqueScheduler extends EventEmitter
     @redis.enqueue job.queue, job.class, job.args
   
   cleanupTimestamp: (timestamp) ->
-    redis.llen "delayed:#{timestamp}" (err, len) =>
+    key = @resque.key("delayed:#{timestamp}")
+    redis.llen key (err, len) =>
       if length == 0
-        @redis.del "delayed:#{timestamp}"
+        @redis.del key
         @redis.zrem 'delayed_queue_schedule', timestamp
     
 exports.schedulerUsing = (Resque) ->
