@@ -41,7 +41,7 @@ class ResqueScheduler extends EventEmitter
   start: ->
     if not @running
       @running = true
-      @interval = setInterval poll, 5000     # Runs every five seconds
+      @interval = setInterval @poll, 5000     # Runs every five seconds
   
   end: (cb) ->
     @running = false
