@@ -41,8 +41,9 @@ class ResqueScheduler extends EventEmitter
   start: ->
     if not @running
       @running = true
-      @interval = setInterval ((t) ->
-        t.poll())(this), 5000     # Runs every five seconds
+      self = this
+      @interval = setInterval ((->
+        self.poll())), 5000     # Runs every five seconds
   
   end: (cb) ->
     @running = false
@@ -56,7 +57,8 @@ class ResqueScheduler extends EventEmitter
     # Decide if there is/are timestamp(s) in the sorted list to operate on 
     # if there are, get pull them
     @nextDelayedTimestamp (err, timestamp) =>
-      if timestamp?
+      if !err && timestamp
+        console.log "Got the timestamp, attempting to get enqueue somethings..."
         @enqueueDelayedItemsForTimestamp timestamp, (err) =>
           @nextDelayedTimestamp arguments.callee unless err?
     return
@@ -64,14 +66,16 @@ class ResqueScheduler extends EventEmitter
   nextDelayedTimestamp: (callback) ->
     time = Helpers.rTimestamp(new Date())
     @redis.zrangebyscore @resque.key('delayed_queue_schedule'), '-inf', time, 'limit', 0, 1, (err, items) ->
-      if err || not items?
+      if err || items == null || items.length == 0
         callback(err)
       else
+        console.log "Returning the next timestamp that I found"
         callback(false, items[0])
         
   enqueueDelayedItemsForTimestamp: (timestamp, callback) ->
     @nextItemForTimestamp timestamp, (err, job) =>
-      if not err? and job?
+      if !err && job
+        console.log "About to attempt to requeue a job..."
         @transfer job
         @nextItemForTimestamp timestamp, arguments.callee
       else
@@ -81,15 +85,16 @@ class ResqueScheduler extends EventEmitter
   nextItemForTimestamp: (timestamp, callback) ->
     key = @resque.key("delayed:#{timestamp}")
     @redis.lpop key, (err, job) =>
-      @cleanupTimestamp key, timestamp
+      @cleanupTimestamp timestamp
       if err
         callback err
       else
+        console.log "Returning a job that I found in the queue."
         callback false, JSON.parse job
 
   transfer: (job) ->
     console.log "Queuing job: #{JSON.stringify job}"
-    @redis.enqueue job.queue, job.class, job.args
+    @resque.enqueue job.queue, job.class, job.args
   
   cleanupTimestamp: (timestamp) ->
     key = @resque.key("delayed:#{timestamp}")
