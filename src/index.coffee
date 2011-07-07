@@ -54,9 +54,9 @@ class ResqueScheduler extends EventEmitter
     # Calculate the current
     # Decide if there is/are timestamp(s) in the sorted list to operate on 
     # if there are, get pull them
-    @nextDelayedTimestamp (err, timestamp) ->
+    @nextDelayedTimestamp (err, timestamp) =>
       if timestamp?
-        @enqueueDelayedItemsForTimestamp timestamp, (err) ->
+        @enqueueDelayedItemsForTimestamp timestamp, (err) =>
           @nextDelayedTimestamp arguments.callee unless err?
     return
     
@@ -69,7 +69,7 @@ class ResqueScheduler extends EventEmitter
         callback(false, items[0])
         
   enqueueDelayedItemsForTimestamp: (timestamp, callback) ->
-    @nextItemForTimestamp timestamp, (err, job) ->
+    @nextItemForTimestamp timestamp, (err, job) =>
       if not err? and job?
         @transfer job
         @nextItemForTimestamp timestamp, arguments.callee
@@ -78,8 +78,8 @@ class ResqueScheduler extends EventEmitter
       
   
   nextItemForTimestamp: (timestamp, callback) ->
-    @redis.lpop "delayed:#{timestamp}", (err, job) ->
-      cleanupTimestamp "delayed:#{timestamp}", timestamp
+    @redis.lpop "delayed:#{timestamp}", (err, job) =>
+      @cleanupTimestamp "delayed:#{timestamp}", timestamp
       if err
         callback err
       else
@@ -90,7 +90,7 @@ class ResqueScheduler extends EventEmitter
     @redis.enqueue job.queue, job.class, job.args
   
   cleanupTimestamp: (timestamp) ->
-    redis.llen "delayed:#{timestamp}" (err, len) ->
+    redis.llen "delayed:#{timestamp}" (err, len) =>
       if length == 0
         @redis.del "delayed:#{timestamp}"
         @redis.zrem 'delayed_queue_schedule', timestamp
