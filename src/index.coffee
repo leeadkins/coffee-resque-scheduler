@@ -51,8 +51,6 @@ class ResqueScheduler extends EventEmitter
     @interval = null
     
   poll: ->
-    console.log "Polling..."
-  
     # Calculate the current
     # Decide if there is/are timestamp(s) in the sorted list to operate on 
     # if there are, get pull them
