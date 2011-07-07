@@ -93,7 +93,7 @@ class ResqueScheduler extends EventEmitter
   
   cleanupTimestamp: (timestamp) ->
     key = @resque.key("delayed:#{timestamp}")
-    redis.llen key (err, len) =>
+    @redis.llen key (err, len) =>
       if length == 0
         @redis.del key
         @redis.zrem 'delayed_queue_schedule', timestamp
