@@ -41,7 +41,8 @@ class ResqueScheduler extends EventEmitter
   start: ->
     if not @running
       @running = true
-      @interval = setInterval @poll, 5000     # Runs every five seconds
+      @interval = setInterval ((t) ->
+        t.poll())(this), 5000     # Runs every five seconds
   
   end: (cb) ->
     @running = false
@@ -60,8 +61,8 @@ class ResqueScheduler extends EventEmitter
           @nextDelayedTimestamp arguments.callee unless err?
     return
     
-  nextDelayedTimestamp: (atTime, callback) ->
-    time = Helpers.rTimestamp(if atTime then atTime else new Date())
+  nextDelayedTimestamp: (callback) ->
+    time = Helpers.rTimestamp(new Date())
     @redis.zrangebyscore 'delayed_queue_schedule', '-inf', time, 'limit', 0, 1, (err, items) ->
       if err || not items?
         callback(err)
