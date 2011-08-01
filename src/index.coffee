@@ -2,7 +2,7 @@ EventEmitter = require('events').EventEmitter
 
 Helpers =
   rTimestamp: (timestamp) ->
-    if typeof(timestamp) == 'object' && typeof(timestamp.getTime())
+    if typeof(timestamp) == 'object' && typeof(timestamp.getTime()) != 'undefined'
       rTimestamp = timestamp.getTime() / 1000
     else if typeof(timestamp) == 'number'
       rTimestamp = timestamp / 1000
@@ -29,7 +29,7 @@ class ResqueScheduler extends EventEmitter
     @delayedPush timestamp, item
 
   enqueueIn: (queue, numberOfSecondsFromNow, command, args) ->
-    newTime = new Date() + (numberOfSecondsFromNow * 1000)
+    newTime = new Date().getTime() + (numberOfSecondsFromNow * 1000)
     @enqueueAt queue, newTime, command, args
 
   delayedPush: (timestamp, item) ->
